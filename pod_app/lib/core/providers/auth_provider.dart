@@ -1,9 +1,10 @@
-import 'package:flutter/foundation.dart';
+import 'package/flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/user_model.dart';
-import '../models/subscription_model.dart';
-import '../services/storage_service.dart';
-import '../services/firebase_service.dart';
+import '../services/api_service.dart';
 
 enum AuthStatus {
   initial,
@@ -14,295 +15,116 @@ enum AuthStatus {
 }
 
 class AuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  
-  UserModel? _currentUser;
-  SubscriptionModel? _currentSubscription;
+  final ApiService _apiService;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  UserModel? _user;
   AuthStatus _status = AuthStatus.initial;
-  String? _errorMessage;
-  
-  // Getters
-  UserModel? get currentUser => _currentUser;
-  SubscriptionModel? get currentSubscription => _currentSubscription;
+  String? _error;
+  String? _token;
+
+  UserModel? get user => _user;
   AuthStatus get status => _status;
-  String? get errorMessage => _errorMessage;
+  String? get error => _error;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
-  bool get isLoading => _status == AuthStatus.loading;
-  
-  // Convenience getters for UI
-  bool get hasGenerationsLeft => _currentUser?.hasGenerationsLeft ?? false;
-  int get freeGenerationsLeft => _currentUser?.generationsRemaining ?? 0;
-  bool get isPro => _currentUser?.isPro ?? false;
-  String get userEmail => _currentUser?.email ?? '';
-  String get userName => _currentUser?.displayName ?? 'User';
-  String get displayName => _currentUser?.displayName ?? 'User';
-  
-  AuthProvider() {
-    _initializeAuth();
+
+  AuthProvider(this._apiService) {
+    _tryAutoLogin();
   }
-  
-  // Simple sign in for testing without Firebase
-  void signInAsGuest() {
-    _currentUser = UserModel.newUser(
-      id: 'guest-user',
-      email: 'guest@printcraft.ai',
-      displayName: 'Guest User',
-    );
-    _status = AuthStatus.authenticated;
-    notifyListeners();
-  }
-  
-  Future<void> _initializeAuth() async {
-    try {
-      _status = AuthStatus.loading;
-      notifyListeners();
-      
-      // Check for existing Firebase user
-      final firebaseUser = _auth.currentUser;
-      
-      if (firebaseUser != null) {
-        await _loadUserData(firebaseUser.uid);
-        _status = AuthStatus.authenticated;
-      } else {
-        // Check for stored session
-        final storedUserId = await StorageService.getString('user_id');
-        if (storedUserId != null) {
-          await _loadUserData(storedUserId);
-          _status = AuthStatus.authenticated;
-        } else {
-          _status = AuthStatus.unauthenticated;
-        }
-      }
-    } catch (e) {
+
+  Future<void> _tryAutoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+
+    if (token != null) {
+      _token = token;
+      _apiService.setToken(token);
+      await getProfile();
+    } else {
       _status = AuthStatus.unauthenticated;
-      _errorMessage = e.toString();
-    } finally {
       notifyListeners();
     }
   }
-  
-  Future<void> _loadUserData(String userId) async {
+
+  Future<void> signInWithGoogle() async {
+    _status = AuthStatus.loading;
+    notifyListeners();
+
     try {
-      // Load user from Firestore
-      final userData = await FirebaseService.getUser(userId);
-      if (userData != null) {
-        _currentUser = UserModel.fromMap(userData);
-        
-        // Load subscription if user is pro
-        if (_currentUser!.isPro) {
-          final subData = await FirebaseService.getActiveSubscription(userId);
-          if (subData != null) {
-            _currentSubscription = SubscriptionModel.fromMap(subData);
-          }
-        }
-        
-        // Store user ID locally
-        await StorageService.setString('user_id', userId);
-      }
-    } catch (e) {
-      print('Error loading user data: $e');
-      _errorMessage = e.toString();
-    }
-  }
-  
-  Future<bool> signUp({
-    required String email,
-    required String password,
-    String? displayName,
-  }) async {
-    try {
-      _status = AuthStatus.loading;
-      _errorMessage = null;
-      notifyListeners();
-      
-      // Create Firebase user
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (credential.user != null) {
-        // Create user model
-        _currentUser = UserModel.newUser(
-          id: credential.user!.uid,
-          email: email,
-          displayName: displayName,
-        );
-        
-        // Save to Firestore
-        await FirebaseService.createUser(_currentUser!.toMap());
-        
-        // Send verification email
-        await credential.user!.sendEmailVerification();
-        
-        _status = AuthStatus.authenticated;
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        _status = AuthStatus.unauthenticated;
         notifyListeners();
-        return true;
+        return;
       }
-      
-      return false;
-    } on FirebaseAuthException catch (e) {
-      _status = AuthStatus.error;
-      _errorMessage = _getAuthErrorMessage(e.code);
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _status = AuthStatus.error;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-  
-  Future<bool> signIn({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      _status = AuthStatus.loading;
-      _errorMessage = null;
-      notifyListeners();
-      
-      // Sign in with Firebase
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
-      
-      if (credential.user != null) {
-        await _loadUserData(credential.user!.uid);
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-        return true;
+
+      final UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final String? idToken = await userCredential.user?.getIdToken();
+
+      if (idToken == null) {
+        throw Exception('Failed to get Firebase ID token.');
       }
       
-      return false;
-    } on FirebaseAuthException catch (e) {
-      _status = AuthStatus.error;
-      _errorMessage = _getAuthErrorMessage(e.code);
+      final response = await _apiService.loginWithFirebase(idToken);
+      _token = response['data']['tokens']['accessToken'];
+      _user = UserModel.fromMap(response['data']['user']);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('authToken', _token!);
+      _apiService.setToken(_token!);
+      
+      _status = AuthStatus.authenticated;
       notifyListeners();
-      return false;
+
     } catch (e) {
+      _error = e.toString();
       _status = AuthStatus.error;
-      _errorMessage = e.toString();
       notifyListeners();
-      return false;
     }
   }
-  
+
+  Future<void> getProfile() async {
+    try {
+      final response = await _apiService.getProfile();
+      _user = UserModel.fromMap(response['data']);
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+    } catch (e) {
+      // If fetching profile fails, token is likely invalid -> sign out
+      await signOut();
+    }
+  }
+
+  Future<void> updateProfile({String? displayName, String? photoUrl}) async {
+    if (_user == null) return;
+    try {
+      final response = await _apiService.updateProfile(displayName: displayName, photoUrl: photoUrl);
+      _user = UserModel.fromMap(response['data']);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   Future<void> signOut() async {
-    try {
-      await _auth.signOut();
-      await StorageService.remove('user_id');
-      _currentUser = null;
-      _currentSubscription = null;
-      _status = AuthStatus.unauthenticated;
-      _errorMessage = null;
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
-    }
-  }
-  
-  Future<bool> resetPassword(String email) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _errorMessage = _getAuthErrorMessage(e.code);
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-  
-  Future<void> useGeneration() async {
-    if (_currentUser == null) return;
+    await _googleSignIn.signOut();
+    await _firebaseAuth.signOut();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('authToken');
     
-    if (!_currentUser!.isPro) {
-      _currentUser = _currentUser!.copyWith(
-        freeGenerationsUsed: _currentUser!.freeGenerationsUsed + 1,
-      );
-      
-      // Update in Firestore
-      await FirebaseService.updateUser(_currentUser!.id, {
-        'freeGenerationsUsed': _currentUser!.freeGenerationsUsed,
-        'lastActiveAt': DateTime.now().toIso8601String(),
-      });
-      
-      notifyListeners();
-    }
-  }
-  
-  Future<void> upgradeToPro() async {
-    if (_currentUser == null) return;
-    
-    _currentUser = _currentUser!.copyWith(
-      plan: UserPlan.pro,
-    );
-    
-    // Update in Firestore
-    await FirebaseService.updateUser(_currentUser!.id, {
-      'plan': UserPlan.pro.name,
-    });
-    
-    notifyListeners();
-  }
-  
-  Future<void> updateUserProfile({
-    String? displayName,
-    String? photoUrl,
-    Map<String, dynamic>? preferences,
-  }) async {
-    if (_currentUser == null) return;
-    
-    _currentUser = _currentUser!.copyWith(
-      displayName: displayName ?? _currentUser!.displayName,
-      photoUrl: photoUrl ?? _currentUser!.photoUrl,
-      preferences: preferences ?? _currentUser!.preferences,
-    );
-    
-    final updates = <String, dynamic>{};
-    if (displayName != null) updates['displayName'] = displayName;
-    if (photoUrl != null) updates['photoUrl'] = photoUrl;
-    if (preferences != null) updates['preferences'] = preferences;
-    
-    await FirebaseService.updateUser(_currentUser!.id, updates);
-    notifyListeners();
-  }
-  
-  String _getAuthErrorMessage(String code) {
-    switch (code) {
-      case 'weak-password':
-        return 'The password is too weak.';
-      case 'email-already-in-use':
-        return 'An account already exists with this email.';
-      case 'invalid-email':
-        return 'The email address is invalid.';
-      case 'user-not-found':
-        return 'No user found with this email.';
-      case 'wrong-password':
-        return 'Incorrect password.';
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-      case 'network-request-failed':
-        return 'Network error. Please check your connection.';
-      default:
-        return 'An error occurred. Please try again.';
-    }
-  }
-  
-  void clearError() {
-    _errorMessage = null;
-    if (_status == AuthStatus.error) {
-      _status = _currentUser != null 
-          ? AuthStatus.authenticated 
-          : AuthStatus.unauthenticated;
-    }
+    _user = null;
+    _token = null;
+    _apiService.setToken(null);
+    _status = AuthStatus.unauthenticated;
     notifyListeners();
   }
 }

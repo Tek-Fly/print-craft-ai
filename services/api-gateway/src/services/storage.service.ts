@@ -34,14 +34,14 @@ export class StorageService {
     // Configure for Cloudflare R2
     this.s3Client = new S3Client({
       endpoint: process.env.R2_ENDPOINT!,
-      region: process.env.AWS_REGION || 'auto',
+      region: 'auto',
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!
       }
     });
     
-    this.bucketName = process.env.CLOUDFLARE_R2_BUCKET || 'printcraft-images';
+    this.bucketName = process.env.R2_BUCKET_NAME || 'printcraft-images';
   }
 
   /**

@@ -3,69 +3,50 @@ import { authenticate } from '../middleware/auth';
 import { generationRateLimiter } from '../middleware/rateLimiter';
 import { validateRequest } from '../middleware/validation.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
-import { GenerationController } from '../controllers/generation.controller';
+import { 
+    createGeneration,
+    getGenerationStatus,
+    getGenerationHistory,
+    deleteGeneration,
+    getStyles 
+} from '../controllers/generation.controller';
 import { generationSchemas } from '../validations/generation.validation';
 
 const router = Router();
-const generationController = new GenerationController();
 
-// All generation routes require authentication
+// All generation routes require a valid JWT token.
 router.use(authenticate);
 
-// Create new generation
+// Create a new generation
 router.post(
-  '/create',
+  '/',
   generationRateLimiter,
   validateRequest(generationSchemas.create),
-  asyncHandler(generationController.create.bind(generationController))
+  asyncHandler(createGeneration)
 );
 
-// Get generation status
+// Get a list of available art styles
+router.get('/styles', asyncHandler(getStyles));
+
+// Get the user's generation history
 router.get(
-  '/status/:id',
+    '/history', 
+    validateRequest(generationSchemas.getUserGenerations),
+    asyncHandler(getGenerationHistory)
+);
+
+// Get the status of a specific generation by its ID
+router.get(
+  '/:id',
   validateRequest(generationSchemas.getStatus),
-  asyncHandler(generationController.getStatus.bind(generationController))
+  asyncHandler(getGenerationStatus)
 );
 
-// Get user's generations
-router.get(
-  '/user',
-  validateRequest(generationSchemas.getUserGenerations),
-  asyncHandler(generationController.getUserGenerations.bind(generationController))
-);
-
-// Delete generation
+// Delete a specific generation
 router.delete(
   '/:id',
   validateRequest(generationSchemas.delete),
-  asyncHandler(generationController.delete.bind(generationController))
-);
-
-// Regenerate image
-router.post(
-  '/regenerate/:id',
-  generationRateLimiter,
-  validateRequest(generationSchemas.regenerate),
-  asyncHandler(generationController.regenerate.bind(generationController))
-);
-
-// Download generated image
-router.get(
-  '/download/:id',
-  validateRequest(generationSchemas.download),
-  asyncHandler(generationController.download.bind(generationController))
-);
-
-// Get available styles
-router.get(
-  '/styles',
-  asyncHandler(generationController.getStyles.bind(generationController))
-);
-
-// Get generation statistics
-router.get(
-  '/stats',
-  asyncHandler(generationController.getStats.bind(generationController))
+  asyncHandler(deleteGeneration)
 );
 
 export default router;

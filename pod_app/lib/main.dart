@@ -8,6 +8,7 @@ import 'core/providers/generation_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/user_preferences_provider.dart';
 import 'core/services/storage_service.dart';
+import 'core/services/api_service.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 
 void main() async {
@@ -42,9 +43,20 @@ class PODApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Foundational providers
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => GenerationProvider()),
+        Provider(create: (_) => ApiService()),
+        
+        // Dependent providers
+        ChangeNotifierProxyProvider<ApiService, AuthProvider>(
+          create: (context) => AuthProvider(context.read<ApiService>()),
+          update: (context, apiService, previous) => AuthProvider(apiService),
+        ),
+        ChangeNotifierProxyProvider<ApiService, GenerationProvider>(
+          create: (context) => GenerationProvider(context.read<ApiService>()),
+          update: (context, apiService, previous) => GenerationProvider(apiService),
+        ),
+        
         ChangeNotifierProvider(create: (_) => UserPreferencesProvider()),
       ],
       child: Consumer<ThemeProvider>(

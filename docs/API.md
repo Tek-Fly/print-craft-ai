@@ -1,394 +1,172 @@
-# Appy Fly API Documentation
+# PrintCraft AI API Documentation
 
-Base URL: `https://api.appyfly.com/v1`
+**Base URL**: `/api/v1`
 
 ## Authentication
 
-All API requests require authentication via Bearer token:
+All API requests to protected endpoints require authentication via a JWT Bearer token.
 
-```
-Authorization: Bearer YOUR_API_TOKEN
-```
+**Authorization Header:**
+`Authorization: Bearer YOUR_JWT_TOKEN`
 
-Obtain tokens via Firebase Authentication:
-- Email/Password
-- Google OAuth
-- Apple Sign In
+Tokens are obtained by logging in via the `/auth/login` endpoint using a Firebase ID token.
+
+---
 
 ## Endpoints
 
+### Authentication
+
+#### `POST /auth/login`
+Authenticates a user with a Firebase ID token and returns a JWT session token.
+
+**Request Body:**
+```json
+{
+  "idToken": "<USER_FIREBASE_ID_TOKEN>"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": { "..." },
+    "tokens": {
+      "accessToken": "...",
+      "refreshToken": "..."
+    }
+  }
+}
+```
+
+#### `POST /auth/refresh`
+Refreshes an expired access token using a valid refresh token.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "<YOUR_REFRESH_TOKEN>"
+}
+```
+
 ### Image Generation
 
-#### POST /generations
+#### `POST /generation`
+Creates and queues a new AI image generation task.
 
-Create a new AI image generation.
-
-**Request:**
+**Request Body:**
 ```json
 {
-  "prompt": "Bold motivational text: Dream Big",
-  "style": "minimalist",
-  "mode": "high_quality",
-  "quality": "ultra",
-  "advancedSettings": {
-    "negativePrompt": "blurry, low quality",
-    "aspectRatio": "4:3",
-    "seed": 12345
+  "prompt": "A majestic lion wearing a crown, vintage poster style",
+  "style": "VINTAGE_POSTER"
+}
+```
+
+**Response (`202 Accepted`):**
+```json
+{
+  "success": true,
+  "message": "Generation has been queued.",
+  "data": {
+    "generationId": "clx...",
+    "status": "PENDING"
   }
 }
 ```
 
-**Response:**
-```json
-{
-  "id": "gen_abc123",
-  "userId": "user_123",
-  "status": "processing",
-  "estimatedTime": 45,
-  "estimatedCost": 0.10,
-  "createdAt": "2024-11-08T10:30:00Z",
-  "modelId": "imagen-4-ultra",
-  "webhookUrl": "https://api.appyfly.com/v1/webhooks/generation/gen_abc123"
-}
-```
-
-**Status Codes:**
-- `201`: Generation created
-- `400`: Invalid parameters
-- `401`: Unauthorized
-- `402`: Insufficient credits
-- `429`: Rate limited
-
-#### GET /generations/:id
-
-Get generation status and result.
-
-**Response:**
-```json
-{
-  "id": "gen_abc123",
-  "userId": "user_123",
-  "status": "succeeded",
-  "prompt": "Bold motivational text: Dream Big",
-  "imageUrl": "https://storage.appyfly.com/generations/gen_abc123/image.png",
-  "thumbnailUrl": "https://storage.appyfly.com/generations/gen_abc123/thumb.png",
-  "progress": 100,
-  "width": 4500,
-  "height": 5400,
-  "createdAt": "2024-11-08T10:30:00Z",
-  "completedAt": "2024-11-08T10:30:45Z",
-  "cost": 0.10,
-  "modelUsed": "imagen-4-ultra",
-  "metadata": {
-    "processingTime": 45.2,
-    "seed": 12345
-  }
-}
-```
-
-#### GET /generations
-
-List user's generations.
+#### `GET /generation/history`
+Retrieves a paginated list of the user's past generations.
 
 **Query Parameters:**
-- `limit` (number): Max results per page (default: 20, max: 100)
-- `offset` (number): Pagination offset
-- `status` (string): Filter by status
-- `style` (string): Filter by style
-- `sortBy` (string): Sort field (createdAt, cost)
-- `order` (string): Sort order (asc, desc)
+- `page` (number, optional, default: 1)
+- `limit` (number, optional, default: 10)
 
 **Response:**
 ```json
 {
-  "data": [
-    {
-      "id": "gen_abc123",
-      "prompt": "Bold motivational text: Dream Big",
-      "status": "succeeded",
-      "thumbnailUrl": "https://...",
-      "createdAt": "2024-11-08T10:30:00Z"
+    "success": true,
+    "data": [
+        {
+            "id": "clx...",
+            "prompt": "A majestic lion...",
+            "status": "COMPLETED",
+            "imageUrl": "https://<...>.r2.cloudflarestorage.com/...",
+            "createdAt": "..."
+        }
+    ],
+    "pagination": {
+        "currentPage": 1,
+        "totalPages": 5,
+        "totalGenerations": 50
     }
-  ],
-  "pagination": {
-    "total": 156,
-    "limit": 20,
-    "offset": 0,
-    "hasMore": true
-  }
 }
 ```
 
-#### DELETE /generations/:id
-
-Delete a generation and its images.
+#### `GET /generation/styles`
+Returns a list of available art styles for generation.
 
 **Response:**
 ```json
 {
-  "message": "Generation deleted successfully"
+    "success": true,
+    "data": [
+        { "id": "VINTAGE_POSTER", "name": "Vintage Poster" },
+        { "id": "MINIMALIST_LINE", "name": "Minimalist Line Art" }
+    ]
 }
 ```
 
-### User Management
-
-#### GET /users/profile
-
-Get current user profile.
+#### `GET /generation/:id`
+Gets the status and details of a specific generation.
 
 **Response:**
 ```json
 {
-  "id": "user_123",
-  "email": "user@example.com",
-  "displayName": "John Doe",
-  "photoUrl": "https://...",
-  "subscription": {
-    "status": "active",
-    "plan": "pro_monthly",
-    "expiresAt": "2024-12-08T00:00:00Z"
-  },
-  "usage": {
-    "freeGenerationsUsed": 3,
-    "totalGenerations": 156,
-    "creditsRemaining": 450.50
-  },
-  "preferences": {
-    "defaultStyle": "minimalist",
-    "defaultQuality": "ultra"
-  },
-  "createdAt": "2024-01-01T00:00:00Z"
-}
-```
-
-#### PATCH /users/profile
-
-Update user profile.
-
-**Request:**
-```json
-{
-  "displayName": "Jane Doe",
-  "preferences": {
-    "defaultStyle": "artistic"
-  }
-}
-```
-
-### Subscription Management
-
-#### GET /subscriptions/plans
-
-List available subscription plans.
-
-**Response:**
-```json
-{
-  "plans": [
-    {
-      "id": "pro_monthly",
-      "name": "Pro Monthly",
-      "price": 9.99,
-      "currency": "USD",
-      "interval": "month",
-      "features": {
-        "unlimitedGenerations": true,
-        "premiumStyles": true,
-        "priorityProcessing": true,
-        "commercialLicense": true
-      }
+    "success": true,
+    "data": {
+        "id": "clx...",
+        "status": "COMPLETED",
+        "prompt": "A majestic lion...",
+        "imageUrl": "https://<...>.r2.cloudflarestorage.com/...",
+        "storageKey": "...",
+        "width": 4500,
+        "height": 5400,
+        "createdAt": "...",
+        "updatedAt": "...",
+        "completedAt": "..."
     }
-  ]
 }
 ```
 
-#### POST /subscriptions/create
+#### `DELETE /generation/:id`
+Deletes a user's generation.
 
-Create a new subscription.
-
-**Request:**
+**Response (`200 OK`):**
 ```json
 {
-  "planId": "pro_monthly",
-  "paymentMethodId": "pm_abc123"
+  "success": true,
+  "message": "Generation deleted successfully."
 }
 ```
 
-### Styles & Models
+### User (Placeholders)
 
-#### GET /styles
+These endpoints are not yet implemented.
 
-List available generation styles.
+- `GET /user/profile`
+- `PUT /user/profile`
 
-**Response:**
-```json
-{
-  "styles": [
-    {
-      "id": "minimalist",
-      "name": "Minimalist",
-      "description": "Clean, simple designs",
-      "isPremium": false,
-      "examples": ["https://..."]
-    }
-  ]
-}
-```
+---
 
-#### GET /models
+## Status Codes
 
-List available AI models.
-
-**Response:**
-```json
-{
-  "models": [
-    {
-      "id": "imagen-4-ultra",
-      "name": "Google Imagen 4 Ultra",
-      "costPerImage": 0.10,
-      "averageTime": 45,
-      "quality": "ultra",
-      "supportedStyles": ["all"]
-    }
-  ]
-}
-```
-
-## Webhooks
-
-Configure webhooks to receive real-time updates.
-
-### Generation Completed
-```json
-{
-  "event": "generation.completed",
-  "timestamp": "2024-11-08T10:30:45Z",
-  "data": {
-    "id": "gen_abc123",
-    "status": "succeeded",
-    "imageUrl": "https://..."
-  }
-}
-```
-
-Verify webhook signatures:
-```javascript
-const signature = request.headers['x-appyfly-signature'];
-const payload = JSON.stringify(request.body);
-const expectedSignature = crypto
-  .createHmac('sha256', WEBHOOK_SECRET)
-  .update(payload)
-  .digest('hex');
-
-if (signature !== expectedSignature) {
-  throw new Error('Invalid signature');
-}
-```
-
-## Rate Limits
-
-| Plan | Requests/Minute | Concurrent Generations |
-|------|----------------|----------------------|
-| Free | 10 | 1 |
-| Pro | 100 | 5 |
-| Enterprise | 1000 | 20 |
-
-Rate limit headers:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1699439400
-```
-
-## Error Responses
-
-```json
-{
-  "error": {
-    "code": "insufficient_credits",
-    "message": "You don't have enough credits for this operation",
-    "details": {
-      "required": 0.10,
-      "available": 0.05
-    }
-  }
-}
-```
-
-Common error codes:
-- `invalid_prompt`: Prompt validation failed
-- `insufficient_credits`: Not enough credits
-- `rate_limited`: Too many requests
-- `model_unavailable`: Selected model is offline
-- `generation_failed`: AI model error
-
-## SDKs
-
-### JavaScript/TypeScript
-```bash
-npm install @appyfly/sdk
-```
-
-```javascript
-import { AppyFlyClient } from '@appyfly/sdk';
-
-const client = new AppyFlyClient({
-  apiKey: 'YOUR_API_KEY'
-});
-
-const generation = await client.generations.create({
-  prompt: 'Sunset landscape',
-  style: 'watercolor'
-});
-```
-
-### Flutter/Dart
-```yaml
-dependencies:
-  appyfly_sdk: ^1.0.0
-```
-
-```dart
-final client = AppyFlyClient(apiKey: 'YOUR_API_KEY');
-
-final generation = await client.generateImage(
-  prompt: 'Sunset landscape',
-  style: 'watercolor',
-);
-```
-
-## Pagination
-
-Use cursor-based pagination for large datasets:
-
-```
-GET /generations?limit=20&cursor=eyJjcmVhdGVkQXQiOjE2OTk0Mzk0MDB9
-```
-
-Response includes next cursor:
-```json
-{
-  "data": [...],
-  "nextCursor": "eyJjcmVhdGVkQXQiOjE2OTk0Mzk1MDB9",
-  "hasMore": true
-}
-```
-
-## Versioning
-
-API version in URL: `/v1/`
-
-Deprecated endpoints return:
-```
-Sunset: Sat, 1 Jan 2025 00:00:00 GMT
-```
-
-## Status Page
-
-Monitor API status: https://status.appyfly.com
-
-Subscribe to updates via:
-- Email notifications
-- RSS feed
-- Webhook notifications
+- `200 OK`: Request was successful.
+- `201 Created`: Resource was successfully created.
+- `202 Accepted`: Request was accepted for processing, but is not yet complete.
+- `400 Bad Request`: The request was invalid (e.g., missing parameters).
+- `401 Unauthorized`: Authentication failed or was not provided.
+- `403 Forbidden`: The authenticated user does not have permission.
+- `404 Not Found`: The requested resource could not be found.
+- `500 Internal Server Error`: An unexpected error occurred on the server.

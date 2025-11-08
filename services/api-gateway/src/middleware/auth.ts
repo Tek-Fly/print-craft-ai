@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthenticationError, AuthorizationError } from '../utils/errors';
 import { verifyAccessToken, verifyApiKey } from '../services/auth.service';
-import { prisma } from '../server';
+import prisma from '../utils/prisma';
 
 // Extend Request type to include user
 declare global {

@@ -1,5 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { asyncHandler } from '../utils/asyncHandler';
+import { getProfile, updateProfile } from '../controllers/user.controller';
+import { validateRequest } from '../middleware/validation.middleware';
+import { userSchemas } from '../validations/user.validation';
+
 
 const router = Router();
 
@@ -7,60 +12,16 @@ const router = Router();
 router.use(authenticate);
 
 // Get user profile
-router.get('/profile', async (req, res, next) => {
-  try {
-    res.json({
-      success: true,
-      data: {
-        message: 'User profile endpoint - To be implemented',
-        user: req.user,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get(
+    '/profile', 
+    asyncHandler(getProfile)
+);
 
 // Update user profile
-router.put('/profile', async (req, res, next) => {
-  try {
-    res.json({
-      success: true,
-      data: {
-        message: 'Update profile endpoint - To be implemented',
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get user statistics
-router.get('/stats', async (req, res, next) => {
-  try {
-    res.json({
-      success: true,
-      data: {
-        message: 'User stats endpoint - To be implemented',
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Delete user account
-router.delete('/', async (req, res, next) => {
-  try {
-    res.json({
-      success: true,
-      data: {
-        message: 'Delete account endpoint - To be implemented',
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+router.put(
+    '/profile', 
+    validateRequest(userSchemas.updateProfile),
+    asyncHandler(updateProfile)
+);
 
 export default router;

@@ -6,7 +6,7 @@ import {
   verifyRefreshToken,
   validateFirebaseToken 
 } from '../services/auth.service';
-import { prisma } from '../server';
+import prisma from '../utils/prisma';
 import { authenticate } from '../middleware/auth';
 import { authRateLimiter } from '../middleware/rateLimiter';
 import { ValidationError, AuthenticationError } from '../utils/errors';
@@ -117,7 +117,7 @@ router.post('/logout',
         success: true,
         message: 'Logged out successfully',
       });
-    } catch (error) {
+    } catch (error)_ {
       next(error);
     }
   }

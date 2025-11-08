@@ -6,7 +6,7 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import prisma from './utils/prisma';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -14,7 +14,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/requestLogger';
 
 // Import routes
-// import authRoutes from './routes/auth.routes';
+import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import generationRoutes from './routes/generation.routes';
 import subscriptionRoutes from './routes/subscription.routes';
@@ -26,16 +26,12 @@ import healthRoutes from './routes/health.routes';
 // Import services
 import { logger } from './utils/logger';
 import { initializeRedis } from './services/redis.service';
-import { initializeQueue } from './services/queue.service';
+// The queue service now initializes itself as a singleton. No need to call a function.
+import './services/queue.service'; 
 import { initializeWebSocket } from './services/websocket.service';
 
 // Load environment variables
 dotenv.config();
-
-// Initialize Prisma
-export const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
 
 // Create Express app
 const app = express();
@@ -69,7 +65,7 @@ app.use(requestLogger);
 app.use('/api/v1', rateLimiter);
 
 // API Routes
-// app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/generation', generationRoutes);
 app.use('/api/v1/subscription', subscriptionRoutes);
@@ -89,10 +85,10 @@ app.get('/', (_req, res) => {
 });
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     error: 'Not Found',
-    message: `Route ${req.method} ${req.url} not found`,
+    message: `Route not found`,
   });
 });
 
@@ -107,11 +103,9 @@ const gracefulShutdown = async () => {
     logger.info('HTTP server closed');
   });
 
-  // Close database connections
   await prisma.$disconnect();
   logger.info('Database connection closed');
 
-  // Close Redis connection
   const redis = await initializeRedis();
   await redis.quit();
   logger.info('Redis connection closed');
@@ -125,26 +119,17 @@ process.on('SIGINT', gracefulShutdown);
 // Start server
 const startServer = async () => {
   try {
-    // Test database connection
     await prisma.$connect();
     logger.info('✅ Database connected successfully');
 
-    // Initialize Redis
     await initializeRedis();
     logger.info('✅ Redis connected successfully');
 
-    // Initialize Queue
-    await initializeQueue();
-    logger.info('✅ Queue system initialized');
-
-    // Initialize WebSocket
     initializeWebSocket(io);
     logger.info('✅ WebSocket server initialized');
 
-    // Start listening
     server.listen(PORT, () => {
       logger.info(`🚀 Server is running on port ${PORT} in ${NODE_ENV} mode`);
-      logger.info(`📝 API documentation available at http://localhost:${PORT}/api/v1/docs`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
