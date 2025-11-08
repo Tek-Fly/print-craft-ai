@@ -1,0 +1,255 @@
+name: printcraft_monorepo
+repository: https://github.com/Tek-Fly/print-craft-ai
+
+packages:
+  # Flutter/Dart packages
+  - apps/pod-app
+  - packages/@appyfly/ui/**
+  - packages/@appyfly/sdk/dart
+
+# Melos configuration
+command:
+  version:
+    # Generate commit links in CHANGELOG.md
+    linkCommit: true
+    # Update CHANGELOG.md for each package
+    workspaceChangelog: false
+    # Use conventional commits
+    usePubspec: true
+
+  bootstrap:
+    # Run pub get in parallel
+    runPubGetInParallel: true
+    # Hoist dependencies to root
+    usePubspecOverrides: true
+
+scripts:
+  # Analysis and formatting
+  analyze:
+    run: |
+      melos exec -c 1 -- \
+        dart analyze --fatal-infos
+    description: Run `dart analyze` in all packages.
+
+  format:
+    run: dart format .
+    description: Format all Dart files in the repository.
+
+  format:check:
+    run: dart format . --set-exit-if-changed
+    description: Check if all Dart files are formatted correctly.
+
+  # Testing
+  test:
+    run: |
+      melos exec -c 1 --dir-exists="test" -- \
+        flutter test --coverage
+    description: Run Flutter tests in all packages with coverage.
+
+  test:unit:
+    run: |
+      melos exec -c 1 --dir-exists="test" --file-exists="test/unit" -- \
+        flutter test test/unit
+    description: Run unit tests only.
+
+  test:widget:
+    run: |
+      melos exec -c 1 --dir-exists="test" --file-exists="test/widget" -- \
+        flutter test test/widget
+    description: Run widget tests only.
+
+  test:integration:
+    run: |
+      melos exec -c 1 --dir-exists="integration_test" -- \
+        flutter test integration_test
+    description: Run integration tests.
+
+  # Coverage
+  coverage:
+    run: |
+      melos exec -c 1 --dir-exists="test" -- \
+        flutter test --coverage && \
+      melos exec -c 1 --dir-exists="coverage" -- \
+        lcov --remove coverage/lcov.info \
+          '**/*.g.dart' \
+          '**/*.freezed.dart' \
+          '**/*.config.dart' \
+          '**/generated/**' \
+          -o coverage/lcov.info
+    description: Generate test coverage reports.
+
+  coverage:html:
+    run: |
+      melos run coverage && \
+      genhtml coverage/lcov.info -o coverage/html
+    description: Generate HTML coverage report.
+
+  # Code generation
+  build:runner:
+    run: |
+      melos exec -c 1 --depends-on="build_runner" -- \
+        dart run build_runner build --delete-conflicting-outputs
+    description: Run build_runner in all packages.
+
+  watch:
+    run: |
+      melos exec -c 1 --depends-on="build_runner" -- \
+        dart run build_runner watch --delete-conflicting-outputs
+    description: Watch and rebuild generated files.
+
+  # Dependency management
+  deps:check:
+    run: |
+      melos exec -c 1 -- \
+        dart pub deps
+    description: Check dependencies in all packages.
+
+  deps:upgrade:
+    run: |
+      melos exec -c 1 -- \
+        dart pub upgrade --major-versions
+    description: Upgrade dependencies to latest major versions.
+
+  deps:outdated:
+    run: |
+      melos exec -c 1 -- \
+        dart pub outdated
+    description: Check for outdated dependencies.
+
+  # Flutter specific
+  flutter:clean:
+    run: |
+      melos exec -c 1 --flutter -- \
+        flutter clean
+    description: Clean Flutter build artifacts.
+
+  flutter:pub:
+    run: |
+      melos exec -c 1 --flutter -- \
+        flutter pub get
+    description: Get Flutter dependencies.
+
+  # Development scripts
+  dev:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter run
+    description: Run the main Pod app in development mode.
+
+  dev:web:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter run -d chrome --web-renderer html
+    description: Run the Pod app in web mode.
+
+  # Build scripts
+  build:apk:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter build apk --release \
+          --dart-define=ENVIRONMENT=production
+    description: Build production APK.
+
+  build:ios:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter build ios --release \
+          --dart-define=ENVIRONMENT=production
+    description: Build production iOS app.
+
+  build:web:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter build web --release \
+          --dart-define=ENVIRONMENT=production \
+          --web-renderer canvaskit
+    description: Build production web app.
+
+  # Versioning
+  version:patch:
+    run: melos version --yes patch
+    description: Version all packages with a patch bump.
+
+  version:minor:
+    run: melos version --yes minor
+    description: Version all packages with a minor bump.
+
+  version:major:
+    run: melos version --yes major
+    description: Version all packages with a major bump.
+
+  # Publishing
+  publish:dry:
+    run: melos publish --dry-run --yes
+    description: Dry run of publishing all packages.
+
+  publish:
+    run: melos publish --yes
+    description: Publish all packages to pub.dev.
+
+  # Quality checks
+  quality:
+    run: |
+      melos run format:check && \
+      melos run analyze && \
+      melos run test
+    description: Run all quality checks.
+
+  # CI/CD helpers
+  ci:setup:
+    run: |
+      dart pub global activate melos && \
+      melos bootstrap
+    description: Setup Melos for CI environment.
+
+  ci:test:
+    run: |
+      melos run analyze && \
+      melos run format:check && \
+      melos run test && \
+      melos run coverage
+    description: Run all CI tests.
+
+  # Maintenance
+  clean:all:
+    run: |
+      melos clean && \
+      melos run flutter:clean && \
+      rm -rf coverage/
+    description: Clean all build artifacts and generated files.
+
+  # Documentation
+  docs:generate:
+    run: |
+      melos exec -c 1 -- \
+        dart doc .
+    description: Generate API documentation.
+
+  # Custom scripts for PrintCraft
+  printcraft:setup:
+    run: |
+      melos bootstrap && \
+      melos run build:runner
+    description: Initial setup for PrintCraft development.
+
+  printcraft:update-icons:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter pub run flutter_launcher_icons
+    description: Update app launcher icons.
+
+  printcraft:update-splash:
+    run: |
+      melos exec -c 1 --scope="pod_app" -- \
+        flutter pub run flutter_native_splash:create
+    description: Update native splash screens.
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.16.0"
+
+# IDE configuration
+ide:
+  intellij:
+    # Generate .iml files for IntelliJ/Android Studio
+    enabled: true

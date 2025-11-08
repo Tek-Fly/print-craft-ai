@@ -1,0 +1,121 @@
+# GitHub CODEOWNERS file for PrintCraft AI
+# This file defines code ownership for the monorepo structure
+# Owners will be automatically requested for review when someone opens a pull request
+# Format: pattern owner1 @owner2 @org/team
+# The last matching pattern takes precedence
+
+# Global owners - PrintCraft AI Lead Developer team
+* @Tek-Fly/printcraft-leads
+
+# Documentation
+*.md @Tek-Fly/printcraft-docs @Tek-Fly/printcraft-leads
+/docs/ @Tek-Fly/printcraft-docs
+README.md @Tek-Fly/printcraft-docs @Tek-Fly/printcraft-leads
+
+# Master Plan and Architecture
+/MASTER_PLAN.md @Tek-Fly/printcraft-leads @Tek-Fly/printcraft-architects
+/architecture/ @Tek-Fly/printcraft-architects
+
+# Claude Configuration and Skills
+/.claude/ @Tek-Fly/printcraft-ai-team @Tek-Fly/printcraft-leads
+/.claude/skills/ @Tek-Fly/printcraft-ai-team
+/CLAUDE.md @Tek-Fly/printcraft-ai-team @Tek-Fly/printcraft-leads
+
+# Flutter/Mobile Team Ownership
+/apps/pod-app/ @Tek-Fly/printcraft-flutter
+/packages/@appyfly/ui/ @Tek-Fly/printcraft-flutter @Tek-Fly/printcraft-ux
+/packages/@appyfly/sdk/dart/ @Tek-Fly/printcraft-flutter
+/melos.yaml @Tek-Fly/printcraft-flutter @Tek-Fly/printcraft-leads
+
+# Flutter Platform Specific
+/apps/pod-app/ios/ @Tek-Fly/printcraft-flutter-ios
+/apps/pod-app/android/ @Tek-Fly/printcraft-flutter-android
+/apps/pod-app/web/ @Tek-Fly/printcraft-flutter-web
+/apps/pod-app/macos/ @Tek-Fly/printcraft-flutter-desktop
+/apps/pod-app/windows/ @Tek-Fly/printcraft-flutter-desktop
+/apps/pod-app/linux/ @Tek-Fly/printcraft-flutter-desktop
+
+# Backend/API Team Ownership
+/services/ @Tek-Fly/printcraft-backend
+/services/api-gateway/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-infrastructure
+/services/generation-queue/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-ai-specialists
+/services/replicate-integration/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-ai-specialists
+/services/user-management/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-security
+/services/payment-processor/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-security
+
+# Core Packages
+/packages/@appyfly/core/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-flutter
+/packages/@appyfly/shared/ @Tek-Fly/printcraft-leads
+/packages/@appyfly/types/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-flutter
+
+# Infrastructure and DevOps
+/infrastructure/ @Tek-Fly/printcraft-infrastructure
+/k8s/ @Tek-Fly/printcraft-infrastructure
+/helm/ @Tek-Fly/printcraft-infrastructure
+/terraform/ @Tek-Fly/printcraft-infrastructure @Tek-Fly/printcraft-security
+/.github/ @Tek-Fly/printcraft-infrastructure @Tek-Fly/printcraft-leads
+/scripts/ @Tek-Fly/printcraft-infrastructure
+
+# CI/CD Workflows
+/.github/workflows/ @Tek-Fly/printcraft-infrastructure @Tek-Fly/printcraft-leads
+/.github/actions/ @Tek-Fly/printcraft-infrastructure
+
+# Security Critical Files
+/security/ @Tek-Fly/printcraft-security @Tek-Fly/printcraft-leads
+*.key @Tek-Fly/printcraft-security
+*.pem @Tek-Fly/printcraft-security
+*.cert @Tek-Fly/printcraft-security
+.env* @Tek-Fly/printcraft-security @Tek-Fly/printcraft-infrastructure
+
+# Firebase Configuration
+/firebase.json @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-infrastructure
+/.firebaserc @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-infrastructure
+/firestore.rules @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-security
+/firestore.indexes.json @Tek-Fly/printcraft-backend
+
+# Agent Configurations
+/.claude/agents/ @Tek-Fly/printcraft-ai-team @Tek-Fly/printcraft-leads
+/.claude/agents/orchestrator/ @Tek-Fly/printcraft-leads
+/.claude/agents/flutter-team/ @Tek-Fly/printcraft-flutter @Tek-Fly/printcraft-ai-team
+/.claude/agents/backend-team/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-ai-team
+/.claude/agents/shared-services/ @Tek-Fly/printcraft-leads @Tek-Fly/printcraft-ai-team
+
+# Testing
+/**/__tests__/ @Tek-Fly/printcraft-qa
+/**/*.test.ts @Tek-Fly/printcraft-qa
+/**/*.test.tsx @Tek-Fly/printcraft-qa
+/**/*.test.dart @Tek-Fly/printcraft-qa @Tek-Fly/printcraft-flutter
+/e2e/ @Tek-Fly/printcraft-qa
+/integration_test/ @Tek-Fly/printcraft-qa @Tek-Fly/printcraft-flutter
+
+# Build Configuration
+/package.json @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-infrastructure
+/pubspec.yaml @Tek-Fly/printcraft-flutter
+/tsconfig*.json @Tek-Fly/printcraft-backend
+/.eslintrc* @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-leads
+/analysis_options.yaml @Tek-Fly/printcraft-flutter @Tek-Fly/printcraft-leads
+
+# Deployment Configuration
+/vercel.json @Tek-Fly/printcraft-infrastructure
+/netlify.toml @Tek-Fly/printcraft-infrastructure
+/Dockerfile* @Tek-Fly/printcraft-infrastructure @Tek-Fly/printcraft-backend
+/docker-compose*.yml @Tek-Fly/printcraft-infrastructure
+
+# Legal and Compliance
+/LICENSE @Tek-Fly/printcraft-leads @Tek-Fly/legal
+/PRIVACY.md @Tek-Fly/printcraft-leads @Tek-Fly/legal
+/TERMS.md @Tek-Fly/printcraft-leads @Tek-Fly/legal
+
+# Special Files Requiring Multiple Approvals
+/MASTER_PLAN.md @Tek-Fly/printcraft-leads @Tek-Fly/printcraft-architects @Tek-Fly/cto
+/CODEOWNERS @Tek-Fly/printcraft-leads @Tek-Fly/cto
+/security/security-policy.md @Tek-Fly/printcraft-security @Tek-Fly/printcraft-leads @Tek-Fly/cto
+
+# Third-party integrations
+/integrations/shopify/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-integrations
+/integrations/printful/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-integrations
+/integrations/stripe/ @Tek-Fly/printcraft-backend @Tek-Fly/printcraft-security
+
+# Branding and Assets
+/assets/branding/ @Tek-Fly/printcraft-ux @Tek-Fly/printcraft-leads
+/BRANDING_UPDATE_LOG.md @Tek-Fly/printcraft-ux @Tek-Fly/printcraft-leads

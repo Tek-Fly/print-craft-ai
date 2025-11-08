@@ -1,0 +1,199 @@
+# Orchestrator Agent Configuration
+name: PrintCraft Lead Developer
+version: 1.0.0
+role: orchestrator
+team: leadership
+
+# Agent metadata
+metadata:
+  created: 2025-11-08
+  author: PrintCraft AI Team
+  description: Primary orchestrator for PrintCraft AI development teams
+
+# MCP server configuration
+mcp_servers:
+  docker:
+    enabled: true
+    priority: high
+    features:
+      - container_management
+      - service_monitoring
+      - log_analysis
+  
+  sqlite:
+    enabled: true
+    priority: high
+    database: project_metrics.db
+    features:
+      - task_tracking
+      - sprint_metrics
+      - performance_data
+  
+  ide:
+    enabled: true
+    priority: medium
+    features:
+      - code_analysis
+      - diagnostics
+      - refactoring
+  
+  sequential_thinking:
+    enabled: true
+    priority: high
+    max_steps: 50
+    features:
+      - architecture_planning
+      - problem_decomposition
+      - decision_analysis
+  
+  memory:
+    enabled: true
+    priority: critical
+    features:
+      - project_knowledge
+      - team_context
+      - decision_history
+
+# Skills configuration
+skills:
+  - project-management
+  - code-review
+  - architecture-design
+  - monorepo-management
+  - cross-team-communication
+  - deployment-automation
+
+# Communication settings
+communication:
+  protocols:
+    - websocket
+    - http
+    - memory_graph
+  
+  message_types:
+    - task_assignment
+    - status_update
+    - review_request
+    - escalation
+    - announcement
+  
+  team_channels:
+    flutter_team: /channels/team-alpha
+    backend_team: /channels/team-beta
+    shared_services: /channels/shared
+    all_hands: /channels/all
+
+# Automation rules
+automation:
+  daily_tasks:
+    - time: "09:00"
+      action: daily_standup_coordination
+    - time: "13:00"
+      action: progress_check
+    - time: "17:00"
+      action: daily_summary
+  
+  weekly_tasks:
+    - day: monday
+      time: "10:00"
+      action: sprint_planning
+    - day: friday
+      time: "16:00"
+      action: sprint_review
+  
+  triggers:
+    - event: pr_opened
+      action: assign_reviewers
+    - event: build_failed
+      action: notify_team
+    - event: security_alert
+      action: immediate_response
+
+# Performance thresholds
+thresholds:
+  sprint_velocity:
+    min: 60
+    target: 80
+    max: 100
+  
+  code_coverage:
+    min: 70
+    target: 80
+    critical: 85
+  
+  build_time:
+    warning: 15m
+    critical: 30m
+  
+  response_time:
+    task_assignment: 5m
+    code_review: 2h
+    escalation: 15m
+
+# Integration settings
+integrations:
+  github:
+    organization: Tek-Fly
+    repository: print-craft-ai
+    permissions:
+      - admin
+      - merge
+      - deploy_staging
+  
+  monitoring:
+    dashboards:
+      - project_overview
+      - team_performance
+      - system_health
+    
+    alerts:
+      - metric: error_rate
+        threshold: 5%
+        action: investigate
+      - metric: response_time
+        threshold: 500ms
+        action: optimize
+
+# Resource allocation
+resources:
+  cpu_priority: high
+  memory_limit: 2GB
+  persistent_storage: true
+  network_access: full
+
+# Security settings
+security:
+  authentication: required
+  encryption: always
+  audit_logging: enabled
+  access_control:
+    - role: orchestrator
+      permissions: all
+    - role: team_lead
+      permissions: read_write
+    - role: developer
+      permissions: read
+
+# Behavioral settings
+behavior:
+  decision_style: collaborative
+  risk_tolerance: moderate
+  communication_style: clear_concise
+  escalation_threshold: high
+  autonomy_level: high
+
+# Fallback configuration
+fallback:
+  on_error:
+    - log_error
+    - notify_admin
+    - attempt_recovery
+  
+  on_timeout:
+    - escalate_to_human
+    - document_issue
+  
+  on_conflict:
+    - seek_consensus
+    - document_decision
+    - implement_resolution

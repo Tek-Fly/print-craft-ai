@@ -1,0 +1,291 @@
+# Environment Variables - CRITICAL: Never commit these
+.env
+.env.local
+.env.production
+.env.*.local
+*.env
+
+# API Keys and Secrets - NEVER commit
+**/api_keys.dart
+**/secrets.dart
+**/firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.key
+*.p12
+*.p8
+service-account*.json
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+/build/
+*.dart.js
+*.js_
+*.js.deps
+*.js.map
+.flutter-plugins
+.flutter-plugins-dependencies
+coverage/
+doc/api/
+.fvm/
+
+# iOS
+**/ios/**/Flutter/Flutter.framework
+**/ios/**/Flutter/Flutter.podspec
+**/ios/**/Flutter/Generated.xcconfig
+**/ios/**/Flutter/app.flx
+**/ios/**/Flutter/app.zip
+**/ios/**/Flutter/flutter_assets/
+**/ios/**/Flutter/flutter_export_environment.sh
+**/ios/**/ServiceDefinitions.json
+**/ios/**/Runner/GeneratedPluginRegistrant.*
+**/ios/**/.symlinks/
+**/ios/**/Pods/
+**/ios/**/.generated/
+**/ios/**/Flutter/App.framework
+**/ios/**/Flutter/ephemeral/
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Podfile.lock
+**/ios/Runner.xcworkspace/
+**/ios/build/
+
+# Android
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+**/android/**/release/
+**/android/**/debug/
+*.jks
+*.keystore
+
+# IntelliJ/Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+**/android/**/.idea/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Node.js (for tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm
+.yarn-integrity
+
+# Python (for scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Logs
+logs/
+*.log
+*.log.*
+.firebase/
+
+# Testing
+test-results/
+playwright-report/
+test-artifacts/
+e2e/screenshots/
+e2e/videos/
+e2e/downloads/
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+
+# Build outputs
+dist/
+build/
+out/
+release/
+*.zip
+*.tar.gz
+*.apk
+*.aab
+*.ipa
+*.app
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+.local/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# IDE specific
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Security scanning
+.scannerwork/
+security-reports/
+
+# Certificates (except example certs)
+*.crt
+*.cer
+*.pfx
+!example.crt
+!example.cer
+
+# Terraform (if using infrastructure as code)
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+!example.tfvars
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Miscellaneous
+.sass-cache/
+.connect.lock
+.lock-wscript
+
+# Project specific
+/pod_app_with_replicate/
+generated_images/
+user_uploads/
+cache/
+.replicate/
+.firebase-cache/
+
+# Development tools cache
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+pubspec.lock  # Include this in git for apps, exclude for packages
+
+# Claude/AI specific
+.claude/cache/
+.claude/logs/
+*.ai-generated.bak
+
+# Sensitive documentation
+NOTES.private.md
+TODO.private.md
+SECRETS.md
+credentials/
+
+# Local configuration overrides
+config.local.json
+settings.local.json
+**/local_config/
+
+# Performance profiling
+*.trace
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# Generated files
+**/generated/
+**/generated_plugin_registrant.dart
+**/g.dart
+
+# Custom scripts output
+scripts/output/
+scripts/*.log
+
+# Monorepo packages (if applicable)
+packages/*/lib/src/generated/
+
+# Keep these files
+!.gitkeep
+!.env.example
+!example.*.json
+!**/example_*
+!README.md

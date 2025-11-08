@@ -1,0 +1,125 @@
+name: Flutter Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'pod_app/**'
+      - '.github/workflows/flutter-test.yml'
+
+env:
+  FLUTTER_VERSION: '3.16.0'
+
+jobs:
+  test:
+    name: Test Flutter App
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: pod_app
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: stable
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Analyze code
+      run: flutter analyze --no-fatal-infos
+
+    - name: Check formatting
+      run: dart format --set-exit-if-changed .
+
+    - name: Run tests with coverage
+      run: flutter test --coverage --test-randomize-ordering-seed random
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: pod_app/coverage/lcov.info
+        flags: flutter
+        name: flutter-coverage
+
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(lcov --summary coverage/lcov.info | grep "lines......:" | sed 's/.*: \(.*\)%.*/\1/')
+        echo "Current coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "Coverage is below 80% threshold"
+          exit 1
+        fi
+
+  integration-test:
+    name: Integration Tests
+    runs-on: macos-latest
+    
+    defaults:
+      run:
+        working-directory: pod_app
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: stable
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Run iOS Simulator
+      run: |
+        xcrun simctl boot "iPhone 14" || true
+        xcrun simctl wait "iPhone 14" booted
+
+    - name: Run integration tests
+      run: flutter test integration_test
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-results
+        path: pod_app/test-results/
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Gitleaks (secret scanning)
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run dependency check
+      run: |
+        cd pod_app
+        flutter pub outdated --no-dev-dependencies
+        flutter pub audit
+
+    - name: SAST Scan with Semgrep
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/secrets
+          p/owasp-top-ten

@@ -1,0 +1,367 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id              String         @id @default(uuid())
+  firebaseUid     String         @unique
+  email           String         @unique
+  displayName     String?
+  photoUrl        String?
+  role            UserRole       @default(USER)
+  status          UserStatus     @default(ACTIVE)
+  
+  // Profile
+  bio             String?
+  website         String?
+  location        String?
+  
+  // Subscription
+  subscription    Subscription?
+  
+  // Usage tracking
+  totalGenerations Int           @default(0)
+  freeGenerationsUsed Int        @default(0)
+  lastGenerationAt DateTime?
+  
+  // Relations
+  generations     Generation[]
+  payments        Payment[]
+  apiKeys         ApiKey[]
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  lastLoginAt     DateTime?
+  
+  @@index([firebaseUid])
+  @@index([email])
+}
+
+enum UserRole {
+  USER
+  PREMIUM
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+// Subscription model
+model Subscription {
+  id              String         @id @default(uuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  plan            SubscriptionPlan @default(FREE)
+  status          SubscriptionStatus @default(ACTIVE)
+  
+  // Billing
+  customerId      String?        // Custom Cat customer ID
+  currentPeriodStart DateTime
+  currentPeriodEnd DateTime
+  cancelAt        DateTime?
+  canceledAt      DateTime?
+  
+  // Usage limits
+  monthlyGenerationLimit Int
+  generationsThisMonth Int      @default(0)
+  resetAt         DateTime
+  
+  // Features
+  features        Json           // JSON object with feature flags
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+}
+
+// Generation model
+model Generation {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Generation details
+  prompt          String
+  negativePrompt  String?
+  style           String
+  quality         GenerationQuality @default(STANDARD)
+  status          GenerationStatus @default(PENDING)
+  
+  // Image details
+  imageUrl        String?
+  thumbnailUrl    String?
+  width           Int
+  height          Int
+  seed            Int?
+  
+  // Advanced settings
+  settings        Json?          // JSON object with all settings
+  
+  // Replicate details
+  replicateId     String?
+  replicateVersion String?
+  replicateStatus String?
+  
+  // Cost tracking
+  cost            Float?         // Cost in USD
+  credits         Int?           // Credits used
+  
+  // Error handling
+  error           String?
+  errorCode       String?
+  retryCount      Int            @default(0)
+  
+  // Processing times
+  startedAt       DateTime?
+  completedAt     DateTime?
+  processingTime  Int?           // milliseconds
+  
+  // Metadata
+  metadata        Json?
+  tags            String[]
+  isPublic        Boolean        @default(false)
+  
+  // Relations
+  products        Product[]
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum GenerationQuality {
+  STANDARD     // 2250x2700
+  HD           // 3000x3600
+  ULTRA        // 4500x5400
+}
+
+enum GenerationStatus {
+  PENDING
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+// Product model (for POD integration)
+model Product {
+  id              String         @id @default(uuid())
+  generationId    String
+  generation      Generation     @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  
+  // Product details
+  type            ProductType
+  title           String
+  description     String?
+  
+  // Marketplace integration
+  printfulId      String?
+  printifyId      String?
+  etsyListingId   String?
+  shopifyProductId String?
+  
+  // Pricing
+  basePrice       Float
+  retailPrice     Float
+  
+  // Status
+  status          ProductStatus  @default(DRAFT)
+  publishedAt     DateTime?
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([generationId])
+}
+
+enum ProductType {
+  TSHIRT
+  HOODIE
+  POSTER
+  MUG
+  PHONE_CASE
+  STICKER
+  CANVAS
+  OTHER
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+// Payment model
+model Payment {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Payment details
+  amount          Float
+  currency        String         @default("USD")
+  status          PaymentStatus  @default(PENDING)
+  
+  // Payment provider
+  provider        PaymentProvider @default(CUSTOM_CAT)
+  providerId      String?        // Provider's transaction ID
+  
+  // Invoice
+  invoiceId       String?
+  invoiceUrl      String?
+  
+  // Metadata
+  description     String?
+  metadata        Json?
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  paidAt          DateTime?
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
+enum PaymentProvider {
+  CUSTOM_CAT
+  STRIPE
+  PAYPAL
+}
+
+// API Key model (for API access)
+model ApiKey {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name            String
+  key             String         @unique
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  
+  // Permissions
+  scopes          String[]       @default(["read", "write"])
+  
+  // Rate limiting
+  rateLimit       Int            @default(100)
+  
+  // Status
+  isActive        Boolean        @default(true)
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([key])
+  @@index([userId])
+}
+
+// Style model (predefined styles)
+model Style {
+  id              String         @id @default(uuid())
+  name            String         @unique
+  displayName     String
+  description     String?
+  
+  // Style configuration
+  modelId         String
+  modelVersion    String
+  basePrompt      String?
+  negativePrompt  String?
+  parameters      Json           // Model-specific parameters
+  
+  // Display
+  icon            String?
+  thumbnailUrl    String?
+  exampleUrls     String[]
+  
+  // Access
+  isPremium       Boolean        @default(false)
+  isActive        Boolean        @default(true)
+  order           Int            @default(0)
+  
+  // Usage tracking
+  usageCount      Int            @default(0)
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([isActive])
+  @@index([order])
+}
+
+// Analytics Events (for tracking)
+model AnalyticsEvent {
+  id              String         @id @default(uuid())
+  userId          String?
+  sessionId       String
+  
+  // Event details
+  event           String
+  category        String?
+  action          String?
+  label           String?
+  value           Float?
+  
+  // Context
+  properties      Json?
+  userAgent       String?
+  ip              String?
+  country         String?
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+}

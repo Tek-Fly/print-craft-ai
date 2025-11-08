@@ -1,0 +1,204 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests before deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  FLUTTER_VERSION: '3.16.0'
+
+jobs:
+  test:
+    name: Run Tests
+    if: ${{ !github.event.inputs.skip_tests }}
+    uses: ./.github/workflows/flutter-test.yml
+
+  build-android:
+    name: Build Android APK
+    needs: [test]
+    if: ${{ always() && (needs.test.result == 'success' || github.event.inputs.skip_tests) }}
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: pod_app
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: stable
+        cache: true
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Configure Firebase (Staging)
+      env:
+        GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON_STAGING }}
+      run: |
+        echo "$GOOGLE_SERVICES_JSON" | base64 -d > android/app/google-services.json
+
+    - name: Build APK
+      env:
+        KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        echo "$KEYSTORE" | base64 -d > android/upload-keystore.jks
+        flutter build apk --release --dart-define=ENVIRONMENT=staging \
+          --dart-define=REPLICATE_API_URL=https://staging-api.printcraft.ai
+
+    - name: Upload APK to Firebase App Distribution
+      uses: wzieba/Firebase-Distribution-Github-Action@v1
+      with:
+        appId: ${{ secrets.FIREBASE_APP_ID_ANDROID_STAGING }}
+        serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        groups: internal-testers
+        file: pod_app/build/app/outputs/flutter-apk/app-release.apk
+        releaseNotes: |
+          Staging build from commit ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+          Message: ${{ github.event.head_commit.message }}
+
+  build-ios:
+    name: Build iOS IPA
+    needs: [test]
+    if: ${{ always() && (needs.test.result == 'success' || github.event.inputs.skip_tests) }}
+    runs-on: macos-latest
+    
+    defaults:
+      run:
+        working-directory: pod_app
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: stable
+        cache: true
+
+    - name: Get dependencies
+      run: flutter pub get
+
+    - name: Configure Firebase (Staging)
+      env:
+        GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_STAGING }}
+      run: |
+        echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 -d > ios/Runner/GoogleService-Info.plist
+
+    - name: Install Apple Certificate
+      env:
+        P12_CERTIFICATE: ${{ secrets.IOS_P12_CERTIFICATE }}
+        P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE_STAGING }}
+      run: |
+        # Create keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        
+        # Import certificate
+        echo "$P12_CERTIFICATE" | base64 -d > certificate.p12
+        security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+        
+        # Install provisioning profile
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        echo "$PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/staging.mobileprovision
+
+    - name: Build IPA
+      run: |
+        flutter build ipa --release --export-options-plist=ios/ExportOptions.plist \
+          --dart-define=ENVIRONMENT=staging \
+          --dart-define=REPLICATE_API_URL=https://staging-api.printcraft.ai
+
+    - name: Upload to TestFlight
+      env:
+        APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      run: |
+        xcrun altool --upload-app -f build/ios/ipa/*.ipa \
+          --type ios \
+          --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+          --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+          --private-key "$APP_STORE_CONNECT_API_KEY"
+
+    - name: Cleanup keychain
+      if: always()
+      run: |
+        security delete-keychain build.keychain || true
+        rm -f certificate.p12
+
+  deploy-functions:
+    name: Deploy Cloud Functions
+    needs: [test]
+    if: ${{ always() && (needs.test.result == 'success' || github.event.inputs.skip_tests) }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: functions/package-lock.json
+
+    - name: Install dependencies
+      working-directory: functions
+      run: npm ci
+
+    - name: Deploy to Firebase
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      run: |
+        npm install -g firebase-tools
+        firebase use staging --token "$FIREBASE_TOKEN"
+        firebase deploy --only functions --token "$FIREBASE_TOKEN" --non-interactive
+
+  notify:
+    name: Notify Deployment Status
+    needs: [build-android, build-ios, deploy-functions]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Send Slack notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: |
+          Staging Deployment ${{ job.status == 'success' && 'Successful' || 'Failed' }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+          Message: ${{ github.event.head_commit.message }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}

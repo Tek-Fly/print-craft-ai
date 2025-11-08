@@ -1,0 +1,59 @@
+# CODEOWNERS for PrintCraft AI
+
+# Default owners for everything in the repo
+* @printcraft-team
+
+# Flutter App
+/pod_app/ @flutter-team @mobile-lead
+/pod_app/lib/core/ @architecture-team
+/pod_app/lib/features/ @feature-team
+/pod_app/test/ @qa-team
+
+# AI & ML Components
+/pod_app/lib/core/services/generation_service.dart @ai-team
+/pod_app/lib/core/services/replicate_service.dart @ai-team
+/pod_app/lib/core/services/prompt_enhancement_service.dart @ai-team
+/pod_app/lib/core/models/ai_model.dart @ai-team
+
+# Firebase & Backend
+/pod_app/lib/core/services/firebase_service.dart @backend-team
+/firestore.rules @backend-team @security-team
+/storage.rules @backend-team @security-team
+/functions/ @backend-team
+
+# Security & Authentication
+/pod_app/lib/core/providers/auth_provider.dart @security-team
+/pod_app/lib/core/services/auth_service.dart @security-team
+.env.example @security-team
+.gitignore @security-team
+
+# CI/CD & DevOps
+/.github/ @devops-team
+/scripts/ @devops-team
+/Dockerfile @devops-team
+/docker-compose.yml @devops-team
+
+# Claude Skills & Configuration
+/.claude/ @ai-team @architecture-team
+/CLAUDE.md @tech-lead
+
+# Documentation
+*.md @documentation-team
+/docs/ @documentation-team
+/README.md @tech-lead @documentation-team
+
+# Critical Files - Require Tech Lead Approval
+/pod_app/pubspec.yaml @tech-lead
+/pod_app/android/app/build.gradle @tech-lead @mobile-lead
+/pod_app/ios/Runner/Info.plist @tech-lead @mobile-lead
+/SECURITY.md @security-team @tech-lead
+/LICENSE @legal-team @tech-lead
+
+# Tests
+/pod_app/test/ @qa-team
+/pod_app/integration_test/ @qa-team @mobile-lead
+/e2e/ @qa-team
+
+# Design System
+/pod_app/lib/core/theme/ @design-team @mobile-lead
+/pod_app/lib/features/*/presentation/widgets/ @design-team
