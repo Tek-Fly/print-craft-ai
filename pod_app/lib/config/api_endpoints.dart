@@ -2,7 +2,8 @@ class ApiEndpoints {
   // Base URL - Change these for different environments
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000/api/v1', // Development
+    defaultValue: 'http://10.0.2.2:8000/api/v1', // Development - Android emulator
+    // Use 'http://localhost:8000/api/v1' for iOS simulator
   );
   
   // Production URLs (to be configured)

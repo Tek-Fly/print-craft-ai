@@ -54,7 +54,7 @@ dependencies:
   
   # File operations
   path: ^1.8.3
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
   
   # Device info
   device_info_plus: ^10.1.0

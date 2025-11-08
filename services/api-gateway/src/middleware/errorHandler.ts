@@ -6,7 +6,7 @@ export const errorHandler = (
   err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   // Log error
   logger.error({
@@ -87,7 +87,7 @@ export const errorHandler = (
   }
 
   // Default error response
-  res.status(500).json({
+  return res.status(500).json({
     success: false,
     error: {
       message: process.env.NODE_ENV === 'production' 

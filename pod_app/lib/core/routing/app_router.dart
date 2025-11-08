@@ -10,6 +10,7 @@ import '../../features/premium/presentation/screens/premium_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../models/generation_model.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -38,7 +39,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const GalleryScreen());
         
       case '/generation-detail':
-        final generation = settings.arguments;
+        final generation = settings.arguments as GenerationModel;
         return MaterialPageRoute(
           builder: (_) => GenerationDetailScreen(generation: generation),
         );

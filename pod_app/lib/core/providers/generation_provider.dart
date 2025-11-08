@@ -52,6 +52,25 @@ class GenerationProvider extends ChangeNotifier {
     await StorageService.setStringList('recent_generations', jsonList);
   }
   
+  /// Generates an AI image based on the provided prompt
+  /// 
+  /// TODO: Replace mock implementation with real API call
+  /// 
+  /// Steps to implement:
+  /// 1. Create ApiService instance
+  /// 2. Replace Future.delayed with actual API call
+  /// 3. Handle response and map to GenerationModel
+  /// 4. Implement proper error handling
+  /// 5. Add retry logic for failed requests
+  /// 
+  /// Example implementation:
+  /// ```dart
+  /// final response = await _apiService.createGeneration(
+  ///   prompt: prompt,
+  ///   style: _selectedStyle,
+  ///   settings: _advancedSettings,
+  /// );
+  /// ```
   Future<void> generateImage(String prompt) async {
     if (_isGenerating) return;
     
@@ -59,14 +78,18 @@ class GenerationProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      // Simulate API call for generation
+      // MOCK: Simulate API call for generation
+      // TODO: Replace with real API call to backend
       await Future.delayed(const Duration(seconds: 5));
       
       final generation = GenerationModel(
         id: _uuid.v4(),
+        userId: 'guest-user', // TODO: Get from auth provider using context.read<AuthProvider>().userId
         prompt: prompt,
-        imageUrl: 'https://picsum.photos/450/540?random=${DateTime.now().millisecondsSinceEpoch}',
+        imageUrl: 'https://picsum.photos/450/540?random=${DateTime.now().millisecondsSinceEpoch}', // MOCK: Replace with real image URL from API
         style: _selectedStyle,
+        status: GenerationStatus.succeeded,
+        quality: GenerationQuality.ultra,
         createdAt: DateTime.now(),
         settings: Map<String, dynamic>.from(_advancedSettings),
       );
@@ -82,7 +105,10 @@ class GenerationProvider extends ChangeNotifier {
       await _saveRecentGenerations();
       
     } catch (error) {
-      // Handle error
+      // TODO: Implement proper error handling
+      // - Show user-friendly error message
+      // - Log error to analytics
+      // - Retry logic for network errors
       print('Generation error: $error');
     } finally {
       _isGenerating = false;

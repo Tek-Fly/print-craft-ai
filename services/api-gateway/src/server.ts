@@ -14,7 +14,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/requestLogger';
 
 // Import routes
-import authRoutes from './routes/auth.routes';
+// import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import generationRoutes from './routes/generation.routes';
 import subscriptionRoutes from './routes/subscription.routes';
@@ -69,7 +69,7 @@ app.use(requestLogger);
 app.use('/api/v1', rateLimiter);
 
 // API Routes
-app.use('/api/v1/auth', authRoutes);
+// app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/generation', generationRoutes);
 app.use('/api/v1/subscription', subscriptionRoutes);
@@ -79,7 +79,7 @@ app.use('/api/v1/webhook', webhookRoutes);
 app.use('/api/v1/health', healthRoutes);
 
 // Root route
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     message: 'PrintCraft AI API Gateway',
     version: '1.0.0',
@@ -130,7 +130,7 @@ const startServer = async () => {
     logger.info('✅ Database connected successfully');
 
     // Initialize Redis
-    const redis = await initializeRedis();
+    await initializeRedis();
     logger.info('✅ Redis connected successfully');
 
     // Initialize Queue

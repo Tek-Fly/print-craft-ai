@@ -9,7 +9,7 @@ export const rateLimiter = rateLimit({
   message: 'Too many requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req: Request, res: Response) => {
+  handler: (_req: Request, _res: Response) => {
     throw new RateLimitError('Too many requests from this IP, please try again later');
   },
   skip: (req: Request) => {
@@ -50,7 +50,7 @@ export const apiKeyRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
     // Use API key as identifier
-    return req.headers['x-api-key'] as string || req.ip;
+    return req.headers['x-api-key'] as string || req.ip || 'unknown';
   },
   skip: (req: Request) => {
     // Skip if no API key is provided (will use default rate limiter)

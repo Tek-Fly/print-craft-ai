@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/generation_provider.dart';
 import '../../../../core/models/generation_model.dart';
-import '../../widgets/gallery_grid_item.dart';
-import '../../widgets/gallery_filter_bar.dart';
-import '../../widgets/generation_detail_modal.dart';
+import '../widgets/gallery_grid_item.dart';
+import '../widgets/gallery_filter_bar.dart';
+import '../widgets/generation_detail_modal.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});

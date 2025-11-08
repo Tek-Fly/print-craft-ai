@@ -390,7 +390,7 @@ class _GenerationDisplayState extends State<GenerationDisplay>
                   color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                 ),
                 child: Image.network(
-                  widget.generation!.imageUrl,
+                  widget.generation!.imageUrl ?? '',
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: height,

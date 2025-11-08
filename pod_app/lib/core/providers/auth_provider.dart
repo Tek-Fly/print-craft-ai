@@ -34,10 +34,22 @@ class AuthProvider extends ChangeNotifier {
   int get freeGenerationsLeft => _currentUser?.generationsRemaining ?? 0;
   bool get isPro => _currentUser?.isPro ?? false;
   String get userEmail => _currentUser?.email ?? '';
+  String get userName => _currentUser?.displayName ?? 'User';
   String get displayName => _currentUser?.displayName ?? 'User';
   
   AuthProvider() {
     _initializeAuth();
+  }
+  
+  // Simple sign in for testing without Firebase
+  void signInAsGuest() {
+    _currentUser = UserModel.newUser(
+      id: 'guest-user',
+      email: 'guest@printcraft.ai',
+      displayName: 'Guest User',
+    );
+    _status = AuthStatus.authenticated;
+    notifyListeners();
   }
   
   Future<void> _initializeAuth() async {
